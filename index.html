@@ -343,8 +343,22 @@ function update(dt) {
   const vertical = Number(keys.has('ArrowDown')) - Number(keys.has('ArrowUp'));
   if (axis) p.face = axis;
 
+  // 연속 사다리에서 층을 조금 지나쳤더라도 좌우 입력으로 바닥에 내릴 수 있다.
+  // 층 사이에서는 이탈하지 않도록 발과 바닥의 거리 허용치를 제한한다.
+  if (p.ladder && axis) {
+    const landing = floors.find(y => Math.abs(p.y + p.h - y) <= 12);
+    if (landing !== undefined) {
+      p.y = landing - p.h;
+      p.vy = 0;
+      p.ladder = null;
+      p.ground = true;
+      jumpQueued = false;
+    }
+  }
+
   // 발 위치와 사다리 범위를 비교한다. 끝에서는 진행 가능한 방향으로만 진입한다.
-  if (!p.ladder && vertical) {
+  // 좌우 입력을 우선하여 내린 즉시 다음 사다리에 다시 붙는 것을 방지한다.
+  if (!p.ladder && vertical && !axis) {
     p.ladder = ladders.find(l =>
       Math.abs(p.x + p.w / 2 - l.x) < 16 &&
       p.y + p.h >= floors[l.high] - 2 &&
